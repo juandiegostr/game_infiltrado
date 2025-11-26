@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Infiltrado - 3 Jugadores</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: white;
+            touch-action: manipulation;
+        }
+
+        .card-anim {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            transition: transform 0.1s, filter 0.2s;
+        }
+        .btn-primary:active {
+            transform: scale(0.95);
+            filter: brightness(0.9);
+        }
+
+        .role-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center p-4 overflow-hidden relative">
+
+    <!-- Background Elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-10 left-10 w-32 h-32 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div class="absolute bottom-10 right-10 w-32 h-32 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+    </div>
+
+    <!-- PANTALLA 1: INICIO -->
+    <div id="screen-home" class="flex flex-col items-center text-center space-y-8 max-w-md w-full">
+        <div class="space-y-2">
+            <div class="inline-block p-4 rounded-2xl bg-slate-800 mb-4 shadow-xl border border-slate-700">
+                <i data-lucide="venetian-mask" class="w-16 h-16 text-indigo-400 mx-auto"></i>
+            </div>
+            <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                EL INFILTRADO
+            </h1>
+            <p class="text-slate-400 text-lg">Modo 3 Jugadores</p>
+        </div>
+
+        <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-700 w-full text-left space-y-3">
+            <h3 class="font-bold text-indigo-300 flex items-center gap-2">
+                <i data-lucide="info" class="w-4 h-4"></i> Cómo jugar:
+            </h3>
+            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
+                <li>El juego elegirá una palabra secreta.</li>
+                <li>Se asignará aleatoriamente un <strong>Impostor</strong>.</li>
+                <li>Pasa el móvil para que cada uno vea su rol.</li>
+                <li>El Impostor no verá nada. ¡A mentir!</li>
+            </ul>
+        </div>
+
+        <button onclick="startGame()" class="btn-primary w-full py-4 rounded-xl text-xl font-bold shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
+            <i data-lucide="play"></i> Empezar Partida
+        </button>
+    </div>
+
+    <!-- PANTALLA 2: PASE DE TURNO (Intermedia) -->
+    <div id="screen-pass" class="hidden flex-col items-center text-center space-y-8 max-w-md w-full card-anim">
+        <div class="text-6xl mb-4">🤫</div>
+        <h2 class="text-2xl font-bold text-white">Dale el móvil al</h2>
+        <div class="text-5xl font-black text-indigo-400 my-4" id="player-name-display">Jugador 1</div>
+        <p class="text-slate-400 px-6">Asegúrate de que nadie más esté mirando la pantalla.</p>
+        
+        <button onclick="revealRole()" class="bg-slate-700 hover:bg-slate-600 w-full py-4 rounded-xl text-xl font-bold border border-slate-600 transition-colors flex items-center justify-center gap-2">
+            <i data-lucide="eye"></i> Ver mi Rol
+        </button>
+    </div>
+
+    <!-- PANTALLA 3: REVELACIÓN -->
+    <div id="screen-reveal" class="hidden flex-col items-center text-center justify-between py-10 h-3/4 max-w-md w-full card-anim role-card rounded-2xl p-6">
+        
+        <div class="w-full flex justify-center">
+             <span class="bg-slate-800 px-4 py-1 rounded-full text-xs font-mono text-slate-400 border border-slate-700" id="current-player-tag">JUGADOR 1</span>
+        </div>
+
+        <div class="flex flex-col items-center justify-center flex-grow space-y-6">
+            <div id="role-icon-container">
+                <!-- Icono dinámico -->
+            </div>
+            
+            <div class="space-y-2">
+                <h3 class="text-xl text-slate-300">Tu palabra secreta es:</h3>
+                <div id="secret-word-display" class="text-4xl md:text-5xl font-black text-white break-words p-4 bg-slate-900/50 rounded-xl border border-white/10">
+                    <!-- Palabra o IMPOSTOR -->
+                </div>
+            </div>
+            
+            <p id="role-instruction" class="text-sm text-slate-400 max-w-xs mx-auto">
+                <!-- Instrucción dinámica -->
+            </p>
+        </div>
+
+        <button onclick="hideRole()" class="btn-primary w-full py-4 rounded-xl text-xl font-bold shadow-lg flex items-center justify-center gap-2">
+            <i data-lucide="eye-off"></i> Ocultar y Pasar
+        </button>
+    </div>
+
+    <!-- PANTALLA 4: JUEGO EN MARCHA -->
+    <div id="screen-game" class="hidden flex-col items-center text-center space-y-8 max-w-md w-full card-anim">
+        <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center shadow-red-500/50 shadow-2xl mb-4 animate-pulse">
+            <i data-lucide="siren" class="w-12 h-12 text-white"></i>
+        </div>
+        
+        <h2 class="text-3xl font-black text-white">¡Todos listos!</h2>
+        <p class="text-lg text-slate-300 px-4">
+            Empezad a decir vuestras palabras. El impostor está entre vosotros.
+        </p>
+        
+        <div class="bg-slate-800/80 p-6 rounded-xl border border-slate-700 w-full">
+            <p class="text-slate-400 text-sm mb-2 uppercase tracking-widest font-bold">Estado</p>
+            <div class="flex justify-between items-center text-sm">
+                <span>Jugadores:</span>
+                <span class="font-bold text-white">3</span>
+            </div>
+            <div class="flex justify-between items-center text-sm mt-2">
+                <span>Impostores:</span>
+                <span class="font-bold text-red-400">1</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 w-full">
+            <button onclick="revealImpostor()" class="bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-bold border border-slate-600 text-sm">
+                Revelar Identidad
+            </button>
+            <button onclick="resetGame()" class="bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-white shadow-lg text-sm">
+                Nueva Partida
+            </button>
+        </div>
+        
+        <!-- Zona de revelación final (oculta al principio) -->
+        <div id="final-reveal" class="hidden w-full bg-slate-900 border border-slate-700 p-4 rounded-xl mt-4 card-anim">
+            <p class="text-slate-400 text-xs uppercase mb-2">La verdad</p>
+            <p class="text-lg">La palabra era: <span id="final-word" class="font-bold text-indigo-400"></span></p>
+            <p class="text-lg mt-1">El impostor era: <span id="final-impostor" class="font-bold text-red-400"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Configuración
+        const WORDS = [
+            "Pizza", "Playa", "Avión", "Internet", "Fútbol", "Guitarra", 
+            "Hospital", "Chocolate", "Elefante", "Fantasma", "Vampiro", 
+            "Escuela", "Navidad", "Cerveza", "Superhéroe", "Zombie",
+            "YouTube", "TikTok", "Cine", "Piscina", "Montaña", "Tigre",
+            "Dinosaurio", "Alienígena", "Robot", "Pirata", "Ninja", "Mago"
+        ];
+
+        // Estado del juego
+        let gameState = {
+            currentStep: 0, // 0 to 2 (Player 1, 2, 3)
+            impostorIndex: -1, // 0, 1, or 2
+            secretWord: "",
+            players: [
+                { id: 1, name: "Jugador 1" },
+                { id: 2, name: "Jugador 2" },
+                { id: 3, name: "Jugador 3" }
+            ]
+        };
+
+        // Elementos DOM
+        const screens = {
+            home: document.getElementById('screen-home'),
+            pass: document.getElementById('screen-pass'),
+            reveal: document.getElementById('screen-reveal'),
+            game: document.getElementById('screen-game')
+        };
+
+        const ui = {
+            playerName: document.getElementById('player-name-display'),
+            currentPlayerTag: document.getElementById('current-player-tag'),
+            secretWord: document.getElementById('secret-word-display'),
+            roleIcon: document.getElementById('role-icon-container'),
+            roleInstruction: document.getElementById('role-instruction'),
+            finalReveal: document.getElementById('final-reveal'),
+            finalWord: document.getElementById('final-word'),
+            finalImpostor: document.getElementById('final-impostor')
+        };
+
+        // Inicializar iconos
+        lucide.createIcons();
+
+        function switchScreen(screenName) {
+            // Ocultar todas
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            Object.values(screens).forEach(s => s.classList.remove('flex'));
+            
+            // Mostrar la deseada
+            screens[screenName].classList.remove('hidden');
+            screens[screenName].classList.add('flex');
+            
+            // Re-inicializar iconos por si acaso
+            lucide.createIcons();
+        }
+
+        function startGame() {
+            // 1. Elegir palabra aleatoria
+            gameState.secretWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            
+            // 2. Elegir impostor aleatorio (0, 1 o 2)
+            gameState.impostorIndex = Math.floor(Math.random() * 3);
+            
+            // 3. Reiniciar paso
+            gameState.currentStep = 0;
+            
+            // 4. Resetear UI final
+            ui.finalReveal.classList.add('hidden');
+            
+            updatePassScreen();
+            switchScreen('pass');
+        }
+
+        function updatePassScreen() {
+            ui.playerName.innerText = gameState.players[gameState.currentStep].name;
+        }
+
+        function revealRole() {
+            const isImpostor = gameState.currentStep === gameState.impostorIndex;
+            
+            ui.currentPlayerTag.innerText = gameState.players[gameState.currentStep].name;
+
+            if (isImpostor) {
+                // Es el impostor
+                ui.roleIcon.innerHTML = `<i data-lucide="skull" class="w-20 h-20 text-red-500"></i>`;
+                ui.secretWord.innerText = "ERES EL IMPOSTOR";
+                ui.secretWord.className = "text-3xl md:text-4xl font-black text-red-500 break-words p-4 bg-red-900/20 rounded-xl border border-red-500/30";
+                ui.roleInstruction.innerText = "No tienes palabra. Escucha a los demás e intenta encajar sin que te descubran.";
+            } else {
+                // Es civil
+                ui.roleIcon.innerHTML = `<i data-lucide="shield-check" class="w-20 h-20 text-green-500"></i>`;
+                ui.secretWord.innerText = gameState.secretWord;
+                ui.secretWord.className = "text-4xl md:text-5xl font-black text-white break-words p-4 bg-slate-900/50 rounded-xl border border-white/10";
+                ui.roleInstruction.innerText = "Esta es la palabra secreta. Usa una pista sutil para demostrar que sabes la palabra.";
+            }
+            
+            lucide.createIcons();
+            switchScreen('reveal');
+        }
+
+        function hideRole() {
+            gameState.currentStep++;
+
+            if (gameState.currentStep < 3) {
+                // Siguiente jugador
+                updatePassScreen();
+                switchScreen('pass');
+            } else {
+                // Fin del setup, empezar juego
+                switchScreen('game');
+            }
+        }
+
+        function revealImpostor() {
+            ui.finalWord.innerText = gameState.secretWord;
+            ui.finalImpostor.innerText = gameState.players[gameState.impostorIndex].name;
+            ui.finalReveal.classList.remove('hidden');
+            ui.finalReveal.classList.add('block');
+        }
+
+        function resetGame() {
+            switchScreen('home');
+        }
+
+    </script>
+</body>
+</html>
