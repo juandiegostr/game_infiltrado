@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Infiltrado - 3 Jugadores</title>
+    <title>El Infiltrado - Multijugador</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -14,6 +14,7 @@
             background-color: #0f172a; /* Slate 900 */
             color: white;
             touch-action: manipulation;
+            user-select: none; /* Evitar selección de texto accidental */
         }
 
         .card-anim {
@@ -34,6 +35,15 @@
             filter: brightness(0.9);
         }
 
+        .btn-secondary {
+            background: #1e293b;
+            border: 1px solid #334155;
+            transition: all 0.2s;
+        }
+        .btn-secondary:active {
+            background: #0f172a;
+        }
+
         .role-card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -43,33 +53,49 @@
 </head>
 <body class="h-screen w-full flex flex-col items-center justify-center p-4 overflow-hidden relative">
 
-    <!-- Background Elements -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
         <div class="absolute top-10 left-10 w-32 h-32 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
         <div class="absolute bottom-10 right-10 w-32 h-32 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
     </div>
 
-    <!-- PANTALLA 1: INICIO -->
-    <div id="screen-home" class="flex flex-col items-center text-center space-y-8 max-w-md w-full">
+    <div id="screen-home" class="flex flex-col items-center text-center space-y-6 max-w-md w-full">
         <div class="space-y-2">
-            <div class="inline-block p-4 rounded-2xl bg-slate-800 mb-4 shadow-xl border border-slate-700">
+            <div class="inline-block p-4 rounded-2xl bg-slate-800 mb-2 shadow-xl border border-slate-700">
                 <i data-lucide="venetian-mask" class="w-16 h-16 text-indigo-400 mx-auto"></i>
             </div>
             <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
                 EL INFILTRADO
             </h1>
-            <p class="text-slate-400 text-lg">Modo 3 Jugadores</p>
+            <p class="text-slate-400 text-lg">Juego de deducción</p>
         </div>
 
-        <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-700 w-full text-left space-y-3">
-            <h3 class="font-bold text-indigo-300 flex items-center gap-2">
+        <div class="bg-slate-800/80 p-6 rounded-xl border border-slate-700 w-full space-y-4">
+            <label class="text-indigo-300 font-bold text-sm uppercase tracking-wider">Número de Jugadores</label>
+            
+            <div class="flex items-center justify-between bg-slate-900 rounded-lg p-2">
+                <button onclick="changePlayerCount(-1)" class="w-12 h-12 rounded-lg bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform">
+                    -
+                </button>
+                
+                <div class="text-center">
+                    <span id="player-count-display" class="text-4xl font-black text-white">3</span>
+                </div>
+
+                <button onclick="changePlayerCount(1)" class="w-12 h-12 rounded-lg bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform">
+                    +
+                </button>
+            </div>
+            <p class="text-xs text-slate-500">Mínimo 3, Máximo 20</p>
+        </div>
+
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 w-full text-left">
+            <h3 class="font-bold text-indigo-300 flex items-center gap-2 text-sm mb-2">
                 <i data-lucide="info" class="w-4 h-4"></i> Cómo jugar:
             </h3>
-            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
-                <li>El juego elegirá una palabra secreta.</li>
-                <li>Se asignará aleatoriamente un <strong>Impostor</strong>.</li>
-                <li>Pasa el móvil para que cada uno vea su rol.</li>
-                <li>El Impostor no verá nada. ¡A mentir!</li>
+            <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                <li>Todos reciben una palabra secreta menos uno.</li>
+                <li>Pasa el móvil para ver vuestro rol.</li>
+                <li>El <strong>Impostor</strong> debe mentir.</li>
             </ul>
         </div>
 
@@ -78,9 +104,8 @@
         </button>
     </div>
 
-    <!-- PANTALLA 2: PASE DE TURNO (Intermedia) -->
     <div id="screen-pass" class="hidden flex-col items-center text-center space-y-8 max-w-md w-full card-anim">
-        <div class="text-6xl mb-4">🤫</div>
+        <div class="text-6xl mb-4 animate-bounce">🤫</div>
         <h2 class="text-2xl font-bold text-white">Dale el móvil al</h2>
         <div class="text-5xl font-black text-indigo-400 my-4" id="player-name-display">Jugador 1</div>
         <p class="text-slate-400 px-6">Asegúrate de que nadie más esté mirando la pantalla.</p>
@@ -90,28 +115,24 @@
         </button>
     </div>
 
-    <!-- PANTALLA 3: REVELACIÓN -->
-    <div id="screen-reveal" class="hidden flex-col items-center text-center justify-between py-10 h-3/4 max-w-md w-full card-anim role-card rounded-2xl p-6">
+    <div id="screen-reveal" class="hidden flex-col items-center text-center justify-between py-8 h-3/4 max-w-md w-full card-anim role-card rounded-2xl p-6">
         
         <div class="w-full flex justify-center">
              <span class="bg-slate-800 px-4 py-1 rounded-full text-xs font-mono text-slate-400 border border-slate-700" id="current-player-tag">JUGADOR 1</span>
         </div>
 
-        <div class="flex flex-col items-center justify-center flex-grow space-y-6">
+        <div class="flex flex-col items-center justify-center flex-grow space-y-6 w-full">
             <div id="role-icon-container">
-                <!-- Icono dinámico -->
-            </div>
-            
-            <div class="space-y-2">
-                <h3 class="text-xl text-slate-300">Tu palabra secreta es:</h3>
-                <div id="secret-word-display" class="text-4xl md:text-5xl font-black text-white break-words p-4 bg-slate-900/50 rounded-xl border border-white/10">
-                    <!-- Palabra o IMPOSTOR -->
                 </div>
+            
+            <div class="space-y-2 w-full">
+                <h3 class="text-xl text-slate-300">Tu palabra secreta es:</h3>
+                <div id="secret-word-display" class="text-4xl md:text-5xl font-black text-white break-words p-6 bg-slate-900/80 rounded-xl border border-white/10 shadow-inner">
+                    </div>
             </div>
             
             <p id="role-instruction" class="text-sm text-slate-400 max-w-xs mx-auto">
-                <!-- Instrucción dinámica -->
-            </p>
+                </p>
         </div>
 
         <button onclick="hideRole()" class="btn-primary w-full py-4 rounded-xl text-xl font-bold shadow-lg flex items-center justify-center gap-2">
@@ -119,69 +140,117 @@
         </button>
     </div>
 
-    <!-- PANTALLA 4: JUEGO EN MARCHA -->
-    <div id="screen-game" class="hidden flex-col items-center text-center space-y-8 max-w-md w-full card-anim">
-        <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center shadow-red-500/50 shadow-2xl mb-4 animate-pulse">
+    <div id="screen-game" class="hidden flex-col items-center text-center space-y-6 max-w-md w-full card-anim">
+        <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center shadow-red-500/50 shadow-2xl mb-2 animate-pulse">
             <i data-lucide="siren" class="w-12 h-12 text-white"></i>
         </div>
         
-        <h2 class="text-3xl font-black text-white">¡Todos listos!</h2>
-        <p class="text-lg text-slate-300 px-4">
-            Empezad a decir vuestras palabras. El impostor está entre vosotros.
-        </p>
+        <div class="space-y-2">
+            <h2 class="text-3xl font-black text-white">¡Todos listos!</h2>
+            <p class="text-base text-slate-300 px-4">
+                Empezad a decir una palabra relacionada con la secreta. El impostor está entre vosotros.
+            </p>
+        </div>
         
         <div class="bg-slate-800/80 p-6 rounded-xl border border-slate-700 w-full">
-            <p class="text-slate-400 text-sm mb-2 uppercase tracking-widest font-bold">Estado</p>
-            <div class="flex justify-between items-center text-sm">
-                <span>Jugadores:</span>
-                <span class="font-bold text-white">3</span>
+            <p class="text-slate-400 text-xs mb-3 uppercase tracking-widest font-bold border-b border-slate-700 pb-2">Estado de la Partida</p>
+            <div class="flex justify-between items-center text-sm mb-2">
+                <span class="text-slate-300">Total Jugadores:</span>
+                <span class="font-bold text-white text-lg" id="stat-total-players">3</span>
             </div>
-            <div class="flex justify-between items-center text-sm mt-2">
-                <span>Impostores:</span>
-                <span class="font-bold text-red-400">1</span>
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-slate-300">Impostores:</span>
+                <span class="font-bold text-red-400 text-lg">1</span>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4 w-full">
-            <button onclick="revealImpostor()" class="bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-bold border border-slate-600 text-sm">
-                Revelar Identidad
+            <button onclick="revealImpostor()" id="btn-reveal" class="bg-slate-700 hover:bg-slate-600 py-4 rounded-xl font-bold border border-slate-600 text-sm transition-colors">
+                Revelar Verdad
             </button>
-            <button onclick="resetGame()" class="bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-white shadow-lg text-sm">
+            <button onclick="resetGame()" class="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-white shadow-lg text-sm transition-colors">
                 Nueva Partida
             </button>
         </div>
         
-        <!-- Zona de revelación final (oculta al principio) -->
-        <div id="final-reveal" class="hidden w-full bg-slate-900 border border-slate-700 p-4 rounded-xl mt-4 card-anim">
-            <p class="text-slate-400 text-xs uppercase mb-2">La verdad</p>
-            <p class="text-lg">La palabra era: <span id="final-word" class="font-bold text-indigo-400"></span></p>
-            <p class="text-lg mt-1">El impostor era: <span id="final-impostor" class="font-bold text-red-400"></span></p>
+        <div id="final-reveal" class="hidden w-full bg-slate-900 border border-slate-700 p-6 rounded-xl mt-4 card-anim text-left">
+            <div class="mb-4 pb-4 border-b border-slate-800">
+                <p class="text-slate-500 text-xs uppercase font-bold mb-1">La palabra era</p>
+                <p id="final-word" class="text-2xl font-black text-indigo-400"></p>
+            </div>
+            <div>
+                <p class="text-slate-500 text-xs uppercase font-bold mb-1">El impostor era</p>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="skull" class="w-5 h-5 text-red-500"></i>
+                    <p id="final-impostor" class="text-2xl font-black text-red-400"></p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Configuración
+        // --- BASE DE DATOS DE PALABRAS ---
         const WORDS = [
-            "Pizza", "Playa", "Avión", "Internet", "Fútbol", "Guitarra", 
-            "Hospital", "Chocolate", "Elefante", "Fantasma", "Vampiro", 
-            "Escuela", "Navidad", "Cerveza", "Superhéroe", "Zombie",
-            "YouTube", "TikTok", "Cine", "Piscina", "Montaña", "Tigre",
-            "Dinosaurio", "Alienígena", "Robot", "Pirata", "Ninja", "Mago"
+	    // --- CLÁSICOS Y OBJETOS ---
+	    "Pizza", "Playa", "Avión", "Internet", "Fútbol", "Guitarra", 
+	    "Hospital", "Chocolate", "Elefante", "Fantasma", "Vampiro", 
+	    "Escuela", "Navidad", "Cerveza", "Superhéroe", "Zombie",
+	    "YouTube", "TikTok", "Cine", "Piscina", "Montaña", "Tigre",
+	    "Dinosaurio", "Alienígena", "Robot", "Pirata", "Ninja", "Mago",
+	    "Instagram", "Netflix", "Hamburguesa", "Sushi", "Gato", "Perro",
+	    "Boda", "Divorcio", "Cárcel", "Hotel", "Casino", "Biblioteca",
+	    "Gimnasio", "Parque", "Circo", "Zoológico", "Museo", "Iglesia",
+
+	    // --- PERSONAJES Y FAMOSOS (ESPAÑA/MUNDO) ---
+	    "Pedro Sánchez", "El Rey Emérito", "Messi", "Cristiano Ronaldo",
+	    "Rosalía", "Ibai Llanos", "Fernando Alonso", "Belén Esteban",
+	    "El Papa", "Donald Trump", "Putin", "Doraemon", "Shrek",
+	    "Harry Potter", "Darth Vader", "Spiderman", "Barbie", "Oppenheimer",
+	    "Torrente", "Paquita Salas", "La Reina Letizia", "Amancio Ortega",
+	    
+	    // --- LUGARES Y SITUACIONES COTIDIANAS ---
+	    "Mercadona", "IKEA", "Desguace", "Tanatorio", "Sex Shop",
+	    "Comisaría", "Manicomio", "Matadero", "Sauna", "Discoteca",
+	    "After", "Chiquipark", "Residencia de ancianos", "Dentista",
+	    "Proctólogo", "Clase de Matemáticas", "Examen de Conducir",
+	    "Cola del Paro", "Metro en hora punta", "Ascensor", "Baño público",
+
+	    // --- COMIDA Y BEBIDA (ALGO MÁS ESPECÍFICA) ---
+	    "Paella", "Tortilla de Patatas", "Kebab", "Torrezno", "Brócoli",
+	    "Coliflor", "Vino Don Simón", "Jägermeister", "Agua del grifo",
+	    "Fabada", "Gazpacho", "Salmorejo", "Churros", "Ensaimada",
+	    "Callos", "Bocadillo de calamares", "Tofu", "Leche de soja",
+
+	    // --- HUMOR, TABÚ Y COSAS ABSURDAS ---
+	    "Resaca", "Gastroenteritis", "Hemorroides", "Satisfyer", "Viagra",
+	    "Tanga", "Calcetines sucios", "Pañal", "Papel Higiénico",
+	    "Condón", "Test de Embarazo", "Coronavirus", "Mascarilla",
+	    "Grupo de WhatsApp de Padres", "Reunión de vecinos", "Hipoteca",
+	    "Declaración de la Renta", "Multa de tráfico", "Tinder", "OnlyFans",
+	    "Grindr", "La Isla de las Tentaciones", "Sálvame", "First Dates",
+	    
+	    // --- ROLES Y ESTEREOTIPOS ---
+	    "Cuñado", "Suegra", "Influencer", "Youtuber", "Vegano",
+	    "Crossfitero", "Cayetana", "Perroflauta", "Policía", "Ladrón",
+	    "Narcotraficante", "Político corrupto", "Cura", "Monja",
+	    "Stripper", "Sugar Daddy", "Sugar Baby", "Otaku", "Gamer",
+
+	    // --- ANIMALES EXTRAÑOS ---
+	    "Ornitorrinco", "Cucaracha", "Rata", "Paloma", "Medusa",
+	    "Piojo", "Lombriz", "Ñu", "Llama", "Perezoso"
         ];
 
-        // Estado del juego
+        // --- ESTADO DEL JUEGO ---
+        let selectedPlayerCount = 3; // Valor inicial por defecto
+
         let gameState = {
-            currentStep: 0, // 0 to 2 (Player 1, 2, 3)
-            impostorIndex: -1, // 0, 1, or 2
+            currentStep: 0,
+            impostorIndex: -1,
             secretWord: "",
-            players: [
-                { id: 1, name: "Jugador 1" },
-                { id: 2, name: "Jugador 2" },
-                { id: 3, name: "Jugador 3" }
-            ]
+            players: []
         };
 
-        // Elementos DOM
+        // --- ELEMENTOS DOM ---
         const screens = {
             home: document.getElementById('screen-home'),
             pass: document.getElementById('screen-pass'),
@@ -190,6 +259,7 @@
         };
 
         const ui = {
+            playerCountDisplay: document.getElementById('player-count-display'),
             playerName: document.getElementById('player-name-display'),
             currentPlayerTag: document.getElementById('current-player-tag'),
             secretWord: document.getElementById('secret-word-display'),
@@ -197,38 +267,65 @@
             roleInstruction: document.getElementById('role-instruction'),
             finalReveal: document.getElementById('final-reveal'),
             finalWord: document.getElementById('final-word'),
-            finalImpostor: document.getElementById('final-impostor')
+            finalImpostor: document.getElementById('final-impostor'),
+            statTotalPlayers: document.getElementById('stat-total-players'),
+            btnReveal: document.getElementById('btn-reveal')
         };
 
-        // Inicializar iconos
+        // --- INICIALIZACIÓN ---
         lucide.createIcons();
 
-        function switchScreen(screenName) {
-            // Ocultar todas
-            Object.values(screens).forEach(s => s.classList.add('hidden'));
-            Object.values(screens).forEach(s => s.classList.remove('flex'));
+        // --- LÓGICA DE SELECCIÓN DE JUGADORES ---
+        function changePlayerCount(delta) {
+            selectedPlayerCount += delta;
             
-            // Mostrar la deseada
+            // Límites (Mínimo 3, Máximo 20)
+            if (selectedPlayerCount < 3) selectedPlayerCount = 3;
+            if (selectedPlayerCount > 20) selectedPlayerCount = 20;
+
+            // Actualizar visualización con animación simple
+            ui.playerCountDisplay.innerText = selectedPlayerCount;
+        }
+
+        // --- NAVEGACIÓN ---
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => {
+                s.classList.add('hidden');
+                s.classList.remove('flex');
+            });
+            
             screens[screenName].classList.remove('hidden');
             screens[screenName].classList.add('flex');
             
-            // Re-inicializar iconos por si acaso
             lucide.createIcons();
+            window.scrollTo(0,0);
         }
 
+        // --- LÓGICA DEL JUEGO ---
+
         function startGame() {
-            // 1. Elegir palabra aleatoria
+            // 1. Generar jugadores dinámicamente según la selección
+            gameState.players = [];
+            for (let i = 1; i <= selectedPlayerCount; i++) {
+                gameState.players.push({ id: i, name: "Jugador " + i });
+            }
+
+            // 2. Elegir palabra aleatoria
             gameState.secretWord = WORDS[Math.floor(Math.random() * WORDS.length)];
             
-            // 2. Elegir impostor aleatorio (0, 1 o 2)
-            gameState.impostorIndex = Math.floor(Math.random() * 3);
+            // 3. Elegir impostor aleatorio (entre 0 y total-1)
+            gameState.impostorIndex = Math.floor(Math.random() * selectedPlayerCount);
             
-            // 3. Reiniciar paso
+            // 4. Resetear contadores
             gameState.currentStep = 0;
             
-            // 4. Resetear UI final
+            // 5. Preparar UI Final
             ui.finalReveal.classList.add('hidden');
+            ui.statTotalPlayers.innerText = selectedPlayerCount;
+            ui.btnReveal.disabled = false;
+            ui.btnReveal.classList.remove('opacity-50', 'cursor-not-allowed');
             
+            // Ir a la primera pantalla de pase
             updatePassScreen();
             switchScreen('pass');
         }
@@ -239,21 +336,22 @@
 
         function revealRole() {
             const isImpostor = gameState.currentStep === gameState.impostorIndex;
+            const currentPlayerName = gameState.players[gameState.currentStep].name;
             
-            ui.currentPlayerTag.innerText = gameState.players[gameState.currentStep].name;
+            ui.currentPlayerTag.innerText = currentPlayerName;
 
             if (isImpostor) {
-                // Es el impostor
-                ui.roleIcon.innerHTML = `<i data-lucide="skull" class="w-20 h-20 text-red-500"></i>`;
+                // Configuración para el Impostor
+                ui.roleIcon.innerHTML = `<i data-lucide="skull" class="w-20 h-20 text-red-500 animate-pulse"></i>`;
                 ui.secretWord.innerText = "ERES EL IMPOSTOR";
-                ui.secretWord.className = "text-3xl md:text-4xl font-black text-red-500 break-words p-4 bg-red-900/20 rounded-xl border border-red-500/30";
-                ui.roleInstruction.innerText = "No tienes palabra. Escucha a los demás e intenta encajar sin que te descubran.";
+                ui.secretWord.className = "text-3xl md:text-4xl font-black text-red-500 break-words p-6 bg-red-900/20 rounded-xl border border-red-500/30 shadow-[0_0_30px_rgba(220,38,38,0.2)]";
+                ui.roleInstruction.innerText = "¡Shh! No tienes palabra. Escucha a los demás, deduce el tema y miente para encajar.";
             } else {
-                // Es civil
-                ui.roleIcon.innerHTML = `<i data-lucide="shield-check" class="w-20 h-20 text-green-500"></i>`;
+                // Configuración para el Civil
+                ui.roleIcon.innerHTML = `<i data-lucide="shield-check" class="w-20 h-20 text-green-400"></i>`;
                 ui.secretWord.innerText = gameState.secretWord;
-                ui.secretWord.className = "text-4xl md:text-5xl font-black text-white break-words p-4 bg-slate-900/50 rounded-xl border border-white/10";
-                ui.roleInstruction.innerText = "Esta es la palabra secreta. Usa una pista sutil para demostrar que sabes la palabra.";
+                ui.secretWord.className = "text-3xl md:text-5xl font-black text-white break-words p-6 bg-slate-900/50 rounded-xl border border-white/10";
+                ui.roleInstruction.innerText = "Esta es la palabra secreta. Memorízala y di una pista sutil cuando sea tu turno.";
             }
             
             lucide.createIcons();
@@ -263,12 +361,13 @@
         function hideRole() {
             gameState.currentStep++;
 
-            if (gameState.currentStep < 3) {
+            // Comparamos con el número total de jugadores dinámico
+            if (gameState.currentStep < gameState.players.length) {
                 // Siguiente jugador
                 updatePassScreen();
                 switchScreen('pass');
             } else {
-                // Fin del setup, empezar juego
+                // Fin del setup, empezar juego principal
                 switchScreen('game');
             }
         }
@@ -276,11 +375,22 @@
         function revealImpostor() {
             ui.finalWord.innerText = gameState.secretWord;
             ui.finalImpostor.innerText = gameState.players[gameState.impostorIndex].name;
+            
             ui.finalReveal.classList.remove('hidden');
             ui.finalReveal.classList.add('block');
+            
+            // Deshabilitar botón para evitar pulsaciones dobles confusas
+            ui.btnReveal.disabled = true;
+            ui.btnReveal.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Scroll hacia el resultado
+            setTimeout(() => {
+                ui.finalReveal.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
         }
 
         function resetGame() {
+            // Volver al inicio pero manteniendo la selección de jugadores anterior
             switchScreen('home');
         }
 
